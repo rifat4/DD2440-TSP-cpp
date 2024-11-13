@@ -92,21 +92,6 @@ void calculateNearestNeighbours(){
     }
 }
 
-/*
- * if(counter < NEIGHBOURS){
-                nearestNeighbours[i][counter] = j;
-                if(distances[i][j] < longestDist){
-                    distances[i][j] = longestDist;
-                    index = counter;
-                }
-                counter++;
-            } else {
-                if(distances[i][j] < longestDist){
-                    nearestNeighbours[i][index];
-                }
-            }
- */
-
 void printNearestNeighbours(){
     int LIMIT = NEIGHBOURS;
     if(N < NEIGHBOURS) LIMIT = N - 1;
@@ -157,8 +142,8 @@ void printPath(int* path){
 }
 
 
-//could potentially be improved to O(n/2) instead of O(n)
-//tried to implement in java but was slower than just doing O(n)
+//worst case could potentially be improved to O(n/2) instead of O(n) and average to O(1/4)?
+//tried to implement in java but was slower than just this
 void swap(int i, int j, int* path){
     i++;
     while(i < j){
@@ -197,6 +182,180 @@ void twoOPT(int* path){
 
 }
 
+
+//When we want to reverse the list from j to i, where j > i
+//That is reversing from ex index 4 to 2, so if N = 6 then 5<->2, 0<->1
+//3-4 should remain unchanged then because the cut is being made between i and i+1 and j and j+1
+//so i+1 to j should remain unchanged
+void swapLoopOverZero(int* path, int i, int j){
+    j++;
+    j -= N;
+    while(j < i){
+        int temp = path[i];
+        path[i] = path[j + N];
+        path[j + N] = temp;
+        i--;
+        j++;
+    }
+}
+
+void twoOPTUnderZero(int* path, int i, int j){
+    j++;
+    j -= N;
+    while(j < i){
+
+    }
+}
+
+double distance(int* path, int i, int j){
+    return distMat[path[i]][path[j]];
+}
+
+
+//decides what paths to reverse
+void swap(int i, int j, int k, int OPTCase, int* path){
+    switch (OPTCase){
+        case 1:
+            swap(i, k, path);
+            break;
+        case 2:
+            swap(i, j, path);
+            break;
+        case 3:
+            swap(j, k, path);
+            break;
+        case 4:
+            swap(i,j, path);
+            swap(j,k, path);
+            break;
+        case 5:
+            swap(i,j, path);
+            swap(j,k, path);
+            swap(i,k, path);
+            break;
+        case 6:
+            swap(i,j, path);
+            swap(i,k, path);
+            break;
+        case 7:
+            swap(j,k, path);
+            swap(i,k, path);
+            break;
+        
+        
+    default:
+        cerr << "error reached default in swap()" << endl;
+    }
+}
+
+
+
+void threeOPT(int* path){
+    bool changed = true;
+    while(changed){
+        
+        int OPTCase = -1;
+        double longestDelta = 0;
+        double delta;
+        changed = false;
+        for(int i = 0; i < N - 2; i++){
+            for(int j = i + 2; j < N - 1; j++){
+                for(int k = j + 2; k < N; k++){
+
+                    longestDelta = 0;
+
+                    //cerr << "segfault? here? " << endl;
+
+                    //distance between i and i+1
+                    double iDist = distMat[path[i]][path[i+1]];
+                    double jDist = distMat[path[j]][path[j+1]];
+                    double kDist = distMat[path[k]][path[(k+1) % N]];
+
+                    //cerr << "yes here" << endl;
+
+                    
+                    //permutation 3OPT #1 2OPT
+                    double a = -(iDist + kDist);
+                    double b = distMat[path[i]][path[k]] + distMat[path[i+1]][path[(k+1) % N]];
+                    delta = a + b;
+                    if(delta < longestDelta){
+                        longestDelta = delta;
+                        OPTCase = 1;
+                    }
+
+                    //permutation 3OPT #2 2OPT
+                    a = -(iDist + jDist);
+                    b = distMat[path[i]][path[j]] + distMat[path[i+1]][path[j+1]];
+                    delta = a + b;
+                    if(delta < longestDelta){
+                        longestDelta = delta;
+                        OPTCase = 2;
+                    }
+
+                    //permutation 3OPT #3 2OPT
+                    a = -(jDist + kDist);
+                    b = distMat[path[j]][path[k]] + distMat[path[j+1]][path[(k+1) % N]];
+                    delta = a + b;
+                    if(delta < longestDelta){
+                        longestDelta = delta;
+                        OPTCase = 3;
+                    }
+
+
+                    //permutation 3OPT #4
+                    a = -(iDist + jDist + kDist);
+                    b = distMat[path[i]][path[j]] + distMat[path[i+1]][path[k]] + distMat[path[j+1]][path[(k+1) % N]];
+                    delta = a + b;
+                    if(delta < longestDelta){
+                        longestDelta = delta;
+                        OPTCase = 4;
+                    }
+
+
+                    //permutation 3OPT #5
+                    b = distMat[path[i]][path[j+1]] + distMat[path[i+1]][path[k]] + distMat[path[j]][path[(k+1) % N]];
+                    delta = a + b;
+                    if(delta < longestDelta){
+                        longestDelta = delta;
+                        OPTCase = 5;
+                    }
+
+
+                    //permutation 3OPT #6
+                    b = distMat[path[i]][path[k]] + distMat[path[i+1]][path[j+1]] + distMat[path[j]][path[(k+1) % N]];
+                    delta = a + b;
+                    if(delta < longestDelta){
+                        longestDelta = delta;
+                        OPTCase = 6;
+                    }
+
+
+                    //permutation 3OPT #7
+                    b = distMat[path[i]][path[j+1]] + distMat[path[i+1]][path[(k+1) % N]] + distMat[path[j]][path[k]];
+                    delta = a + b;
+                    if(delta < longestDelta){
+                        longestDelta = delta;
+                        OPTCase = 7;
+                    }
+
+
+                    if(longestDelta < 0){
+                        changed = true;
+                        //cerr << "i " << i << " j " << j << " k " << k << " OPTCase " << OPTCase << " longestdelta " << longestDelta << endl;
+                        swap(i, j, k, OPTCase, path);
+                    }
+
+                }
+            }
+            chrono::high_resolution_clock::time_point end_time = chrono::high_resolution_clock::now();
+            chrono::milliseconds elapsed_time = chrono::duration_cast<chrono::milliseconds>(end_time - start);
+            if(elapsed_time.count() > 1980) return;
+
+        }
+
+    }
+}
+
 int main(){
     //read in number of points
     cin >> N;
@@ -218,7 +377,7 @@ int main(){
     //printdistances();
 
     //cerr << "calculating nearest neighbours" << endl;
-    calculateNearestNeighbours();
+    //calculateNearestNeighbours();
     //cerr << "printing nearest neighbours" << endl;
     //printNearestNeighbours();
 
@@ -226,7 +385,9 @@ int main(){
 
     solveNearestNeighbour(path);
 
-    twoOPT(path);
+    //twoOPT(path);
+
+    threeOPT(path);
 
     printPath(path);
 
